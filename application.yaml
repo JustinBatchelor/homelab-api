@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
         - name: homelab-api
-          image: quay.io/jbatchel/homelab-api:v0.0.28
+          image: quay.io/jbatchel/homelab-api:v0.0.31
           ports:
             - containerPort: 5000
               protocol: TCP

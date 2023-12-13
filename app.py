@@ -66,7 +66,6 @@ def delete_table():
     # # Run OTP validation to ensure the request is authorized
     # if not validate_otp_local(request.json.get('otp')):
     #     return jsonify({'error': 'OTP code is invalid'}), 401
-    
     """Connect to the PostgreSQL database server"""
     try:
         # Connect to the PostgreSQL server
@@ -121,9 +120,9 @@ def create_table():
 # - db_password
 # - host
 # - table_name
-# - schema
+# - columns
 # - values
-@app.route('/db/table/insert', methods=['POST'])
+@app.route('/db/table/row/insert', methods=['POST'])
 def insert_into_table():
     # # Run OTP validation to ensure the request is authorized
     # if not validate_otp_local(request.json.get('otp')):
@@ -135,16 +134,24 @@ def insert_into_table():
         conn = connect_to_db(request.json.get('db_name'), request.json.get('db_user'), request.json.get('db_password'), request.json.get('host'))
         print("Connected to the database")
         cursor = conn.cursor()
-        insert_query = "INSERT INTO {} ({}) VALUES (%s, %s, %s);".format(request.json.get('table_name'), ", ".join(x for x in request.json.get('columns')))
         for record in request.json.get('values'):
-            cursor.execute(insert_query, record)
+            query = f"INSERT INTO {request.json.get('table_name')} ({', '.join(request.json.get('columns'))}) VALUES ({', '.join(['%s' for _ in record])})"
+            cursor.execute(query, record)
         conn.commit()
         cursor.close()
         conn.close()
         return jsonify({'status': True, "inserted_records": request.json.get('values')})
     except Exception as e:
         print(f"The error '{e}' occurred")
-        return jsonify({'status': False, 'error': str(e), 'query': insert_query})
+        return jsonify({'status': False, 'error': str(e), 'query': query})
+    
+# requires:
+# - otp
+# - db_name
+# - db_user
+# - db_password
+# - host
+# - table_name
 
 @app.route('/db/table/view', methods=['GET'])
 def view_table():
@@ -174,6 +181,35 @@ def view_table():
 
         return jsonify({'data': rows, 'schema': table_schema})
             
+    except Exception as e:
+        print(f"The error '{e}' occurred")
+        return jsonify({'status': False, 'error': str(e)})
+
+# requires:
+# - otp
+# - db_name
+# - db_user
+# - db_password
+# - host
+# - table_name
+# - condition   
+@app.route('/db/table/row/delete', methods=['POST'])
+def delete_row_from_table():
+    # # Run OTP validation to ensure the request is authorized
+    # if not validate_otp_local(request.json.get('otp')):
+    #     return jsonify({'error': 'OTP code is invalid'}), 401
+    
+    """Connect to the PostgreSQL database server"""
+    try:
+        # Connect to the PostgreSQL server
+        conn = connect_to_db(request.json.get('db_name'), request.json.get('db_user'), request.json.get('db_password'), request.json.get('host'))
+        print("Connected to the database")
+        cursor = conn.cursor()
+        cursor.execute(f"DELETE FROM {request.json.get('table_name')} WHERE {request.json.get('condition')};")
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'status': True})
     except Exception as e:
         print(f"The error '{e}' occurred")
         return jsonify({'status': False, 'error': str(e)})
